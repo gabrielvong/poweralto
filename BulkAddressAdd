@@ -1,5 +1,7 @@
 $json = Get-Content C:\Temp\addressdatainput.json | ConvertFrom-Json
-foreach ($endpoint in $json) {
+$csv = Get-Content C:\Temp\inputexcel.csv | ConvertFrom-CSV
+
+foreach ($endpoint in $csv) {
     $AddressNames = ($endpoint.AddressName) 
     $AddressValues = ($endpoint.AddressValue)
     #-replace '\*\.',''
@@ -8,9 +10,12 @@ foreach ($endpoint in $json) {
         try
         {
         #echo $AddressName
-        #echo $AddressValue
-            Set-PaAddress -Name $AddressName -Value $AddressName -Type fqdn -Description 'Office 365 endpoint' -EA Stop
-            Set-PaAddressGroup -Name 'RandomAddressGroup' -Member $AddressName -EA Stop
+        #echo $endpoint.Addresstype
+        #echo $endpoint.AddressValue
+        #echo $endpoint.AddressDescription
+        #echo Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop >> C:\Temp\configdiff.txt
+           Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop 
+           Set-PaAddressGroup -Name 'RandomAddressGroup' -Member $AddressName -ErrorAction Stop 
         }
         
         catch
@@ -19,3 +24,6 @@ foreach ($endpoint in $json) {
         }
     }
 }
+date >> C:\Temp\configdiff.txt
+Get-paConfigDiff >> C:\Temp\configdiff.txt
+Invoke-PaCommit -Confirm
