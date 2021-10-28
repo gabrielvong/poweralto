@@ -1,0 +1,21 @@
+$json = Get-Content C:\Temp\addressdatainput.json | ConvertFrom-Json
+foreach ($endpoint in $json) {
+    $AddressNames = ($endpoint.AddressName) 
+    $AddressValues = ($endpoint.AddressValue)
+    #-replace '\*\.',''
+    #AND ($AddressValue in $AddressValues)
+    Foreach ($AddressName in $AddressNames) {
+        try
+        {
+        #echo $AddressName
+        #echo $AddressValue
+            Set-PaAddress -Name $AddressName -Value $AddressName -Type fqdn -Description 'Office 365 endpoint' -EA Stop
+            Set-PaAddressGroup -Name 'RandomAddressGroup' -Member $AddressName -EA Stop
+        }
+        
+        catch
+        {
+            $AddressName
+        }
+    }
+}
