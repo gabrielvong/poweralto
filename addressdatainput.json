@@ -1,0 +1,20 @@
+﻿[
+        {
+            "AddressName": "space stuff.co.nz",
+            "AddressType": "fqdd",
+            "AddressValue": "stuff.co.nz",
+			"AddressDescription": "WO0000165611 28102021" 
+        },
+        {
+            "AddressName": "yahoo.com",
+            "AddressType": "fqdn",
+            "AddressValue": "yahoo.com",
+			"AddressDescription": "WO0000165611 28102021" 
+        },
+        {
+            "AddressName": "whatismyip.org",
+            "AddressType": "fqdn",
+            "AddressValue": "whatismyip.org",
+			"AddressDescription": "WO0000165611 28102021" 
+        }
+]
