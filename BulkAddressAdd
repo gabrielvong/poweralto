@@ -15,7 +15,7 @@ foreach ($endpoint in $csv) {
         #echo $endpoint.AddressDescription
         #echo Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop >> C:\Temp\configdiff.txt
            Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop 
-           Set-PaAddressGroup -Name 'RandomAddressGroup' -Member $AddressName -ErrorAction Stop 
+           Set-PaAddressGroup -Name 'RandomAddressGroup' -Member $endpoint.AddressGroup -ErrorAction Stop 
         }
         
         catch
