@@ -1,3 +1,3 @@
-AddressName,AddressType,AddressValue,AddressDescription
-server1,ip-netmask,1.1.1.1,WO000000123456 28102021
-server2,ip-netmask,2.2.2.2,WO000000123456 28102021
+AddressName,AddressType,AddressValue,AddressDescription,AddressGroup
+server1,ip-netmask,1.1.1.1,WO000000123456 28102021,TestAddressGroup
+server2,ip-netmask,2.2.2.2,WO000000123456 28102021,TestAddressGroup
