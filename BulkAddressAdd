@@ -4,9 +4,16 @@ $csvfile = "inputexcel.csv"
 $errorlogpath = "C:\Temp\"
 $errorlogfile = "configdiff.txt"
 
+#Full path of input files/Error logs
 $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
 $errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
+
+
 date >> $errorlog
+$csvfullpath >> $errorlog
+
+echo $csvfullpath
+echo $errorlog
 
 
 #Import CSV
@@ -18,17 +25,28 @@ foreach ($endpoint in $csv) {
     Foreach ($AddressName in $AddressNames) {
         try
         {
+          $currentAddressName = get-PaAddress -Name $AddressName
+          if (([string]::IsNullOrEmpty($currentAddressName))) {
            Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop
-            if (-not ([string]::IsNullOrEmpty($endpoint.AddressGroup))) {
-           Set-PaAddressGroup -Name $endpoint.AddressGroup -Member $AddressName -ErrorAction Stop 
+                if (-not ([string]::IsNullOrEmpty($endpoint.AddressGroup))) {
+                   #Adding the new object to an address group, note this command will not wipe out other existing members of the address group
+                   Set-PaAddressGroup -Name $endpoint.AddressGroup -Member $AddressName -ErrorAction Stop 
+                }
            }
+           else {
+           Write-host "Warning: No action on below address object as it already exists in Panorama:" -ForegroundColor red
+           Write-Output $currentAddressName
+           "Warning: No action on below address object as it already exists in Panorama:" >> $errorlog
+           $currentAddressName >> $errorlog
+           }
+            
         }
         
         catch
         {
-           Write-host $AddressName
-           Write-Host "An error occurred on the above addressName:"
-           Write-Host $_
+           Write-host $AddressName 
+           Write-Host "An error occurred on the above addressName:" -ForegroundColor red
+           Write-output $_
 
            $AddressName >> $errorlog
            "An error occurred on the above addressName:" >> $errorlog
