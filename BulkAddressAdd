@@ -1,29 +1,57 @@
-$json = Get-Content C:\Temp\addressdatainput.json | ConvertFrom-Json
-$csv = Get-Content C:\Temp\inputexcel.csv | ConvertFrom-CSV
+#Envrionment Variables
+$csvpath = "C:\Temp\"
+$csvfile = "inputexcel.csv"
+$errorlogpath = "C:\Temp\"
+$errorlogfile = "configdiff.txt"
 
+$csvfullpath = join-path -path $csvpath -ChildPath $csvfile
+$errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
+date >> $errorlog
+
+
+#Import CSV
+$csv = Get-Content $csvfullpath  | ConvertFrom-CSV
+
+#Looping csv to add address/addressgroup
 foreach ($endpoint in $csv) {
     $AddressNames = ($endpoint.AddressName) 
-    $AddressValues = ($endpoint.AddressValue)
-    #-replace '\*\.',''
-    #AND ($AddressValue in $AddressValues)
     Foreach ($AddressName in $AddressNames) {
         try
         {
-        #echo $AddressName
-        #echo $endpoint.Addresstype
-        #echo $endpoint.AddressValue
-        #echo $endpoint.AddressDescription
-        #echo Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop >> C:\Temp\configdiff.txt
-           Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop 
+           Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop
+            if (-not ([string]::IsNullOrEmpty($endpoint.AddressGroup))) {
            Set-PaAddressGroup -Name $endpoint.AddressGroup -Member $AddressName -ErrorAction Stop 
+           }
         }
         
         catch
         {
-            $AddressName
+           Write-host $AddressName
+           Write-Host "An error occurred on the above addressName:"
+           Write-Host $_
+
+           $AddressName >> $errorlog
+           "An error occurred on the above addressName:" >> $errorlog
+           $_ >> $errorlog
+
+
         }
+        }
+
     }
-}
-date >> C:\Temp\configdiff.txt
-Get-paConfigDiff >> C:\Temp\configdiff.txt
-Invoke-PaCommit -Confirm
+
+#Commit and configDiff
+#Get-paConfigDiff
+#Get-paConfigDiff >> C:\Temp\configdiff.txt
+#Invoke-PaCommit -Confirm
+
+
+#Useful commands
+#$json = Get-Content C:\Temp\addressdatainput.json | ConvertFrom-Json
+#           if ((-not ([string]::IsNullOrEmpty($endpoint.AddressName))) -And (-not ([string]::IsNullOrEmpty($endpoint.Addresstype))) -And (-not ([string]::IsNullOrEmpty($endpoint.AddressValue))))
+#echo $AddressName
+        #echo $endpoint.Addresstype
+        #echo $endpoint.AddressValue
+        #echo $endpoint.AddressDescription
+        #echo Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop >> C:\Temp\configdiff.txt
+                   #           throw $_
