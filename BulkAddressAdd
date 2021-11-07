@@ -2,22 +2,22 @@
 BulkAddressAdd.ps1
 Created by: Gabriel Vong
 Last modified: 08/11/2021
-The Script import a formatted csv to loop through and create an address object to your candidate config
-and put it to an address group. 
+The script imports a formatted csv to loop through and create address objects to your candidate config
+and put them to an new/existing address group you define. 
 
 Please follow readme.md (https://github.com/gabrielvong/poweralto) to connect your powershell envrionment to Panorama.
-download inputexcel.csv and fill before running this script.
+Download inputexcel.csv and fill, create an empty scripterrorlog.txt text file, update "Envrionment Variables" session of this script before running.
 
 While XML API will do most of the input validation, the script will also validate the following:
 - If there is an existing address object with same name, log/show on console and ingore the entry
-- log/show on console if an entry fails XML API validation.
+- log/show on console if an entry fails any XML API validation.
 
 #>
 #Envrionment Variables
 $csvpath = "C:\Temp\"
 $csvfile = "inputexcel.csv"
 $errorlogpath = "C:\Temp\"
-$errorlogfile = "configdiff.txt"
+$errorlogfile = "scripterrorlog.txt"
 
 #Full path of input files/Error logs
 $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
