@@ -1,3 +1,18 @@
+<#
+BulkAddressAdd.ps1
+Created by: Gabriel Vong
+Last modified: 08/11/2021
+The Script import a formatted csv to loop through and create an address object to your candidate config
+and put it to an address group. 
+
+Please follow readme.md (https://github.com/gabrielvong/poweralto) to connect your powershell envrionment to Panorama.
+download inputexcel.csv and fill before running this script.
+
+While XML API will do most of the input validation, the script will also validate the following:
+- If there is an existing address object with same name, log/show on console and ingore the entry
+- log/show on console if an entry fails XML API validation.
+
+#>
 #Envrionment Variables
 $csvpath = "C:\Temp\"
 $csvfile = "inputexcel.csv"
@@ -57,19 +72,3 @@ foreach ($endpoint in $csv) {
         }
 
     }
-
-#Commit and configDiff
-#Get-paConfigDiff
-#Get-paConfigDiff >> C:\Temp\configdiff.txt
-#Invoke-PaCommit -Confirm
-
-
-#Useful commands
-#$json = Get-Content C:\Temp\addressdatainput.json | ConvertFrom-Json
-#           if ((-not ([string]::IsNullOrEmpty($endpoint.AddressName))) -And (-not ([string]::IsNullOrEmpty($endpoint.Addresstype))) -And (-not ([string]::IsNullOrEmpty($endpoint.AddressValue))))
-#echo $AddressName
-        #echo $endpoint.Addresstype
-        #echo $endpoint.AddressValue
-        #echo $endpoint.AddressDescription
-        #echo Set-PaAddress -Name $AddressName -Value $endpoint.AddressValue -Type $endpoint.Addresstype -Description $endpoint.AddressDescription -ErrorAction Stop >> C:\Temp\configdiff.txt
-                   #           throw $_
