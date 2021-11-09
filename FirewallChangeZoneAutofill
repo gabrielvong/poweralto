@@ -1,5 +1,26 @@
 #https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
 
+#Configurable Envrionment Variables
+$csvpath = "C:\Temp\"
+$csvfile = "export_network_interfaces.csv"
+$errorlogpath = "C:\Temp\"
+$errorlogfile = "NetworkInterfaceErrorLogs.txt"
+$xlsxpath = "C:\Temp\"
+$xlsxfile = "Remedy-REQ-FW_Rules+LinuxAgent.xlsx"
+$sheetname = "Sheet1" #name of the sheet that has the firewall rules
+$row = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
+$totalrow = 5 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
+
+#Static Envrionment Variables
+$ws = $excel.$sheetname
+$vr = $null
+$securityzone = $null
+
+#Full path of input files/Error logs
+$csvfullpath = join-path -path $csvpath -ChildPath $csvfile
+$xslxfullpath = join-path -path $xlsxpath -ChildPath $xlsxfile
+$errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
+
 function ConvertFrom-IPToInt64 () { 
 	[CmdletBinding()]
 	param (
@@ -111,24 +132,6 @@ Function Get-IPsInRange {
 	}
 }
 
-#Envrionment Variables
-$csvpath = "C:\Temp\"
-$csvfile = "export_network_interfaces.csv"
-$errorlogpath = "C:\Temp\"
-$errorlogfile = "NetworkInterfaceErrorLogs.txt"
-$xlsxpath = "C:\Temp\"
-$xlsxfile = "obs-to-infoblox.xlsx"
-$sheetname = "Sheet1"
-$row = 5
-$ws = $excel.$sheetname
-$vr = $null
-$securityzone = $null
-
-#Full path of input files/Error logs
-$csvfullpath = join-path -path $csvpath -ChildPath $csvfile
-$xslxfullpath = join-path -path $xlsxpath -ChildPath $xlsxfile
-$errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
-
 #Import CSV
 $csv = Get-Content $csvfullpath  | ConvertFrom-CSV
 
@@ -156,16 +159,12 @@ foreach ($endpoint in $csv) {
                     #echo "Resides in:"
                     $script:securityzone = $endpoint.'Security Zone' 
                     $script:vr = $endpoint.'Virtual Router'
-                    #echo SecurityZone $script:securityzone
-                    #echo VR $script:vr
-                    #echo "--function ends--"
                     return 
                 }
             else {
                     
-                    $script:securityzone = "IDK"
-                    $script:vr = "IDK"
-                    #echo "--function ends--" 
+                    $script:securityzone = "No records found- please check manually"
+                    $script:vr = "No records found - please check manually"                
             }
         }
         catch
@@ -175,26 +174,25 @@ foreach ($endpoint in $csv) {
     }
     }
 
-#Get-zonefromIP -inputIP 10.234.155.30
-
-
 $excel = Open-ExcelPackage -path "$xlsxpath\$xlsxfile"
-#$excel.$sheetname.cells["b8"].value = 'oh yeah baby'
 
 echo 'Processing Source IPs to Zone Mapping'
-5..($ws.Dimension.Rows) | ForEach {
+$totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
                   $IPAddress = $excel.$sheetname.cells["E$row"].value
                   #$IPAddress = 10.230.155.30
                   echo $IPAddress
-                  Get-zonefromIP -inputIP $IPAddress
-                  #$ws.cells["C$row"].value = [string]$v
-                  #echo vr is $vr
-                  #echo securityzone is $securityzone
-                  $excel.$sheetname.cells["B$row"].value = $vr
-                  $excel.$sheetname.cells["C$row"].value = $securityzone
-                  if($row -ne $ws.Dimension.Rows){$row++}
-                  }
+                  if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                    Get-zonefromIP -inputIP $IPAddress
+                    #$ws.cells["C$row"].value = [string]$v
+                    #echo vr is $vr
+                    #echo securityzone is $securityzone
+                    $excel.$sheetname.cells["B$row"].value = $vr
+                    $excel.$sheetname.cells["C$row"].value = $securityzone
+                    }
+                    if($row -ne $ws.Dimension.Rows){$row++}
+                  
+}
 $row=5
 echo 'Processing Destination IPs to Zone Mapping'
 5..($ws.Dimension.Rows) | ForEach {
@@ -202,17 +200,16 @@ echo 'Processing Destination IPs to Zone Mapping'
                   $IPAddress = $excel.$sheetname.cells["I$row"].value
                   #$IPAddress = 10.230.155.30
                   echo $IPAddress
-                  Get-zonefromIP -inputIP $IPAddress
-                  #$ws.cells["C$row"].value = [string]$v
-                  #echo vr is $vr
-                  #echo securityzone is $securityzone
-                  $excel.$sheetname.cells["F$row"].value = $vr
-                  $excel.$sheetname.cells["G$row"].value = $securityzone
-                  if($row -ne $ws.Dimension.Rows){$row++}
-                  }
-
-
-#$v = $excel.'Firewall'.cells["e$i"].value
-#echo $v
-
+                  if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                    Get-zonefromIP -inputIP $IPAddress
+                    #$ws.cells["C$row"].value = [string]$v
+                    #echo vr is $vr
+                    #echo securityzone is $securityzone
+                    $excel.$sheetname.cells["F$row"].value = $vr
+                    $excel.$sheetname.cells["G$row"].value = $securityzone
+                    }
+                    if($row -ne $ws.Dimension.Rows){$row++}
+                  
+}
+echo "Processing completed, opening the spreadsheet.."
 Close-ExcelPackage -ExcelPackage $excel -show
