@@ -163,8 +163,8 @@ foreach ($endpoint in $csv) {
                 }
             else {
                     
-                    $script:securityzone = "No records found- please check manually"
-                    $script:vr = "No records found - please check manually"                
+                    $script:securityzone = "Manual check required"
+                    $script:vr = "Manual check required"                
             }
         }
         catch
@@ -175,7 +175,7 @@ foreach ($endpoint in $csv) {
     }
 
 $excel = Open-ExcelPackage -path "$xlsxpath\$xlsxfile"
-
+echo "Processing spreadsheet $xslxfullpath"
 echo 'Processing Source IPs to Zone Mapping'
 $totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
@@ -211,5 +211,8 @@ echo 'Processing Destination IPs to Zone Mapping'
                     if($row -ne $ws.Dimension.Rows){$row++}
                   
 }
-echo "Processing completed, opening the spreadsheet.."
-Close-ExcelPackage -ExcelPackage $excel -show
+echo "Processing completed and updates saved, opening the spreadsheet $xslxfullpath"
+try {Close-ExcelPackage -ExcelPackage $excel -show}
+catch { write-host "An error occured:" -ForegroundColor red
+        write-host $_ -ForegroundColor Red
+        write-host "If you get 'Error saving file' error, please close $xslxfullpath and re-run the script"}
