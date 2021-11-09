@@ -57,11 +57,10 @@ Function Get-IPsInRange {
 		elseif ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
 			# IP Address with CIDR block
 			$cidr = $matches[5]
-			Write-Host "Cidr is $cidr"
+			#Write-Host "Cidr is $cidr"
 			$temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
 			$IPAddress = $matches[0]
-            #$IPAddress2 = $matches[3]
-			Write-Host "IP is $IPAddress" #"IP2 is $IPAddress2"
+			#Write-Host "IP is $IPAddress" #"IP2 is $IPAddress2"
 		}
 		elseif ($IPAddress -match $RangeRegex) {
 			$startaddr = ConvertFrom-IPToInt64 -ip $matches[1]
@@ -122,22 +121,16 @@ $errorlogfile = "NetworkInterfaceErrorLogs.txt"
 $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
 $errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
 
-
-date >> $errorlog
-$csvfullpath >> $errorlog
-
-echo $csvfullpath
-echo $errorlog
-
-
 #Import CSV
 $csv = Get-Content $csvfullpath  | ConvertFrom-CSV
 
-
-#Define IP to query
-$currentIP = "10.234.155.30"
-
 #Looping csv to add address/addressgroup
+
+function Get-zonefromIP {
+    param  (
+        $inputIP
+        )
+    
 foreach ($endpoint in $csv) {
     $IPsubnets = ($endpoint.'IP Address') 
     Foreach ($IPsubnet in $IPsubnets) {
@@ -148,11 +141,10 @@ foreach ($endpoint in $csv) {
         try
         {
             $subnetaddresses=Get-IPsInRange -IPAddress $IPsubnets
-            echo $subnetaddresses
-            if ($subnetaddresses -contains $currentIP) 
+           # echo $subnetaddresses
+            if ($subnetaddresses -contains $inputIP) 
                 {
-                    echo "yeha!"
-                    echo "$currentIP is a member of $IPsubnet"
+                    echo "$inputIP is a member of $IPsubnet"
                     echo "Resides in:"
                     echo $endpoint.'Security Zone' $endpoint.'Virtual Router'
                 }
@@ -162,3 +154,6 @@ foreach ($endpoint in $csv) {
         }
         }
     }
+    }
+
+Get-zonefromIP -inputIP 10.234.155.30
