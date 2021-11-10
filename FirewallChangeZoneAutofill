@@ -11,13 +11,14 @@ $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Temp\"
 $xlsxfile = "Remedy-REQ-FW_Rules+LinuxAgent.xlsx"
 $sheetname = "Sheet1" #name of the sheet that has the firewall rules
-$row = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
+$firstrow = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
 $totalrow = 5 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
 
 #Static Envrionment Variables
 $ws = $excel.$sheetname
 $vr = $null
 $securityzone = $null
+$row = $firstrow
 $errorlogpath = "C:\Temp\"
 $errorlogfile = "NetworkInterfaceErrorLogs.txt"
 
@@ -196,7 +197,7 @@ $totalrow..($ws.Dimension.Rows) | ForEach {
                     if($row -ne $ws.Dimension.Rows){$row++}
                   
 }
-$row=5
+$row=$firstrow
 echo 'Processing Destination IPs to Zone Mapping'
 $totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
