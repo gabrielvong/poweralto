@@ -1,10 +1,13 @@
 #https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
+#https://github.com/dfinke/ImportExcel
+
+<# run the following once to install ImportExcel Module
+Install-Module -Name ImportExcel
+#>
 
 #Configurable Envrionment Variables
 $csvpath = "C:\Temp\"
 $csvfile = "export_network_interfaces.csv"
-$errorlogpath = "C:\Temp\"
-$errorlogfile = "NetworkInterfaceErrorLogs.txt"
 $xlsxpath = "C:\Temp\"
 $xlsxfile = "Remedy-REQ-FW_Rules+LinuxAgent.xlsx"
 $sheetname = "Sheet1" #name of the sheet that has the firewall rules
@@ -15,6 +18,8 @@ $totalrow = 5 #total number of rows' worth of firewall rules, modify the value d
 $ws = $excel.$sheetname
 $vr = $null
 $securityzone = $null
+$errorlogpath = "C:\Temp\"
+$errorlogfile = "NetworkInterfaceErrorLogs.txt"
 
 #Full path of input files/Error logs
 $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
@@ -132,11 +137,6 @@ Function Get-IPsInRange {
 	}
 }
 
-#Import CSV
-$csv = Get-Content $csvfullpath  | ConvertFrom-CSV
-
-#Looping csv to add address/addressgroup
-
 function Get-zonefromIP {
     param  (
         $inputIP
@@ -174,21 +174,24 @@ foreach ($endpoint in $csv) {
     }
     }
 
+#Import CSV
+$csv = Get-Content $csvfullpath  | ConvertFrom-CSV
+
+#Open spreadsheet and start processing source/destination IPs
 $excel = Open-ExcelPackage -path "$xlsxpath\$xlsxfile"
 echo "Processing spreadsheet $xslxfullpath"
 echo 'Processing Source IPs to Zone Mapping'
 $totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
                   $IPAddress = $excel.$sheetname.cells["E$row"].value
-                  #$IPAddress = 10.230.155.30
                   echo $IPAddress
-                  if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
-                    Get-zonefromIP -inputIP $IPAddress
-                    #$ws.cells["C$row"].value = [string]$v
-                    #echo vr is $vr
-                    #echo securityzone is $securityzone
-                    $excel.$sheetname.cells["B$row"].value = $vr
-                    $excel.$sheetname.cells["C$row"].value = $securityzone
+                    if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                        Get-zonefromIP -inputIP $IPAddress
+                        #$ws.cells["C$row"].value = [string]$v
+                        #echo vr is $vr
+                        #echo securityzone is $securityzone
+                        $excel.$sheetname.cells["B$row"].value = $vr
+                        $excel.$sheetname.cells["C$row"].value = $securityzone
                     }
                     if($row -ne $ws.Dimension.Rows){$row++}
                   
@@ -198,21 +201,21 @@ echo 'Processing Destination IPs to Zone Mapping'
 5..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
                   $IPAddress = $excel.$sheetname.cells["I$row"].value
-                  #$IPAddress = 10.230.155.30
                   echo $IPAddress
-                  if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
-                    Get-zonefromIP -inputIP $IPAddress
-                    #$ws.cells["C$row"].value = [string]$v
-                    #echo vr is $vr
-                    #echo securityzone is $securityzone
-                    $excel.$sheetname.cells["F$row"].value = $vr
-                    $excel.$sheetname.cells["G$row"].value = $securityzone
+                    if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                        Get-zonefromIP -inputIP $IPAddress
+                        #$ws.cells["C$row"].value = [string]$v
+                        #echo vr is $vr
+                        #echo securityzone is $securityzone
+                        $excel.$sheetname.cells["F$row"].value = $vr
+                        $excel.$sheetname.cells["G$row"].value = $securityzone
                     }
-                    if($row -ne $ws.Dimension.Rows){$row++}
-                  
+                    if($row -ne $ws.Dimension.Rows){$row++}               
 }
+
 echo "Processing completed and updates saved, opening the spreadsheet $xslxfullpath"
-try {Close-ExcelPackage -ExcelPackage $excel -show}
-catch { write-host "An error occured:" -ForegroundColor red
-        write-host $_ -ForegroundColor Red
-        write-host "If you get 'Error saving file' error, please close $xslxfullpath and re-run the script"}
+    try {Close-ExcelPackage -ExcelPackage $excel -show}
+        catch { write-host "An error occured:" -ForegroundColor red
+                write-host $_ -ForegroundColor Red
+                write-host "If you get 'Error saving file' error, please close $xslxfullpath and re-run the script"
+              }
