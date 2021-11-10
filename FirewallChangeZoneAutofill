@@ -1,10 +1,6 @@
 #https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
 #https://github.com/dfinke/ImportExcel
 
-<# run the following once to install ImportExcel Module
-Install-Module -Name ImportExcel
-#>
-
 #Configurable Envrionment Variables
 $csvpath = "C:\Temp\"
 $csvfile = "export_network_interfaces.csv"
@@ -26,6 +22,68 @@ $errorlogfile = "NetworkInterfaceErrorLogs.txt"
 $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
 $xslxfullpath = join-path -path $xlsxpath -ChildPath $xlsxfile
 $errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
+
+function Register-Module {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$true, Position=1)]
+    [string]$Name,
+    [parameter(Mandatory=$false, Position=2)]
+    [string]$Version,
+    [parameter(Mandatory=$false, Position=3)]
+    [string]$Repository,
+    [Switch]$AllowClobber
+)
+
+    $versionParam = @{ }
+
+    if ($Version) {
+        $versionParam.Add('RequiredVersion', $Version);
+    }
+
+    if ($Repository) {
+        $versionParam.Add('Repository', $Repository);
+    }
+        
+    if (-not (Get-Module -Name $Name -ListAvailable | where { [String]::IsNullOrEmpty($Version) -or $_.Version -eq $Version } )) {
+        Write-Host "Install module $Name $Version"
+        Install-Module -Name $Name -Force -Verbose -Scope AllUsers @versionParam -AllowClobber:$AllowClobber -ErrorAction Stop
+    } else {
+        Write-Host "Import module $Name $Version"
+        Import-Module $Name @versionParam -ErrorAction Stop
+    }
+}
+
+function Write-ErrorMessage {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$false)]
+    $Prefix = "Error",
+    [parameter(Mandatory=$true, Position=1)]
+    $Error
+)
+
+    $err = $_.Exception
+    $indent = "" 
+    $msg = ""
+
+    while ($err) {
+        if ($msg.Length -gt 0) {
+            $msg += "`r`n${indent} => " 
+        } else {
+            $msg = "${Prefix} : "
+        }
+
+        $msg += $err.Message
+        $indent += "  "
+        $err = $err.InnerException
+    }
+
+ 
+    $host.UI.WriteErrorLine($msg)
+}
+
+Load-Module -Name importexcel
 
 function ConvertFrom-IPToInt64 () { 
 	[CmdletBinding()]
