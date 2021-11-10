@@ -198,7 +198,7 @@ $totalrow..($ws.Dimension.Rows) | ForEach {
 }
 $row=5
 echo 'Processing Destination IPs to Zone Mapping'
-5..($ws.Dimension.Rows) | ForEach {
+$totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
                   $IPAddress = $excel.$sheetname.cells["I$row"].value
                   echo $IPAddress
