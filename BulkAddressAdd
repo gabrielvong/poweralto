@@ -14,6 +14,68 @@ While XML API will do most of the input validation, the script will also validat
 
 #>
 
+function Register-Module {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$true, Position=1)]
+    [string]$Name,
+    [parameter(Mandatory=$false, Position=2)]
+    [string]$Version,
+    [parameter(Mandatory=$false, Position=3)]
+    [string]$Repository,
+    [Switch]$AllowClobber
+)
+
+    $versionParam = @{ }
+
+    if ($Version) {
+        $versionParam.Add('RequiredVersion', $Version);
+    }
+
+    if ($Repository) {
+        $versionParam.Add('Repository', $Repository);
+    }
+        
+    if (-not (Get-Module -Name $Name -ListAvailable | where { [String]::IsNullOrEmpty($Version) -or $_.Version -eq $Version } )) {
+        Write-Host "Install module $Name $Version"
+        Install-Module -Name $Name -Force -Verbose -Scope AllUsers @versionParam -AllowClobber:$AllowClobber -ErrorAction Stop
+    } else {
+        Write-Host "Import module $Name $Version"
+        Import-Module $Name @versionParam -ErrorAction Stop
+    }
+}
+
+function Write-ErrorMessage {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$false)]
+    $Prefix = "Error",
+    [parameter(Mandatory=$true, Position=1)]
+    $Error
+)
+
+    $err = $_.Exception
+    $indent = "" 
+    $msg = ""
+
+    while ($err) {
+        if ($msg.Length -gt 0) {
+            $msg += "`r`n${indent} => " 
+        } else {
+            $msg = "${Prefix} : "
+        }
+
+        $msg += $err.Message
+        $indent += "  "
+        $err = $err.InnerException
+    }
+
+ 
+    $host.UI.WriteErrorLine($msg)
+}
+
+Load-Module -Name poweralto
+
 #Envrionment Variables
 $csvpath = "C:\Temp\"
 $csvfile = "inputexcel.csv"
