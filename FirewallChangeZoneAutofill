@@ -5,7 +5,7 @@
 $csvpath = "C:\Temp\"
 $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Temp\"
-$xlsxfile = "FW_Rules+for+CustomerVerificationService.xlsx"
+$xlsxfile = "Remedy-REQ-FW_Rules_Kubernetes_Prod_to_prod_db2_hvt.xlsx"
 $sheetname = "Sheet1" #name of the sheet that has the firewall rules
 $firstrow = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
 $totalrow = 5 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
