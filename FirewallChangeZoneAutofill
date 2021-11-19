@@ -269,8 +269,11 @@ echo "Check if firewall template is not tampered - cell C3 is Source IP and cell
         $excel.$sheetname.cells["G3"].autofitcolumns()
         write-host Firewall Template okay -ForegroundColor Green       
     }
+    elseif ($excel.$sheetname.cells["G3"].value -eq 'Dest Zone') {
+    #vsys/zone columns already created by the script, no action required
+    }
     else {
-    write-host "Non-standard template used, please manually format the spreadsheet" -ForegroundColor Red
+    write-host "Non-standard template used, please manually format the spreadsheet to mimic the standard template" -ForegroundColor Red
     break
     }
 }
