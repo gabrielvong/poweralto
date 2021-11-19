@@ -1,4 +1,3 @@
-#template needs to look like one in the remedy request http://home.intranet.westpac.co.nz/aptrix/intranet00/help.nsf/650f3eec0dfb990fca25692100069854/d0cedc57382bcd84cc257fee00817ab1/$FILE/Remedy-REQ-FW_Rules%20Template%20v0.1.xlsx
 #https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
 #https://github.com/dfinke/ImportExcel
 
@@ -218,7 +217,7 @@ foreach ($endpoint in $csv) {
                     echo "$inputIP is a member of $IPsubnet"
                     #echo "Resides in:"
                     $script:securityzone = $endpoint.'Security Zone' 
-                    $script:vr = $endpoint.'Virtual Router'
+                    $script:vr = $endpoint.'Virtual System'
                     return 
                 }
             else {
@@ -239,26 +238,36 @@ echo "Check if firewall template is tampered - cell C3 is Source IP and cell E3 
     if ($excel.$sheetname.cells["C3"].value -eq 'Source IP' -And $excel.$sheetname.cells["E3"].value -eq 'Dest IP' ){
         $excel.$sheetname.InsertColumn(4,2)
         $excel.$sheetname.InsertColumn(2,2)
-        $excel.$sheetname.cells["B3"].value = 'Src vsys'
         $excel.$sheetname.cells["B2"].style.Fill.PatternType = 'solid'
+        $excel.$sheetname.cells["B2"].style.font.bold = 'true'
         $excel.$sheetname.cells["B2"].style.fill.BackgroundColor.SetColor("#B7DEE8")
+        $excel.$sheetname.cells["B3"].value = 'Source vsys'
         $excel.$sheetname.cells["B3"].style.Fill.PatternType = 'solid'
+        $excel.$sheetname.cells["B3"].style.font.bold = 'true'
         $excel.$sheetname.cells["B3"].style.fill.BackgroundColor.SetColor("#B7DEE8")
-        $excel.$sheetname.cells["C3"].value = 'Src Zone'
+        $excel.$sheetname.cells["C3"].value = 'Source Zone'
+        $excel.$sheetname.cells["C3"].style.font.bold = 'true'
         $excel.$sheetname.cells["C2"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["C2"].style.fill.BackgroundColor.SetColor("#B7DEE8")
         $excel.$sheetname.cells["C3"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["C3"].style.fill.BackgroundColor.SetColor("#B7DEE8")
         $excel.$sheetname.cells["F3"].value = 'Dest vsys'
+        $excel.$sheetname.cells["F3"].style.font.bold = 'true'
         $excel.$sheetname.cells["F2"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["F2"].style.fill.BackgroundColor.SetColor("#B7DEE8")
         $excel.$sheetname.cells["F3"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["F3"].style.fill.BackgroundColor.SetColor("#B7DEE8")
         $excel.$sheetname.cells["G3"].value = 'Dest Zone'
+        $excel.$sheetname.cells["G3"].style.font.bold = 'true'
         $excel.$sheetname.cells["G2"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["G2"].style.fill.BackgroundColor.SetColor("#B7DEE8")
         $excel.$sheetname.cells["G3"].style.Fill.PatternType = 'solid'
         $excel.$sheetname.cells["G3"].style.fill.BackgroundColor.SetColor("#B7DEE8")
+        $excel.$sheetname.cells["B3"].autofitcolumns()       
+        $excel.$sheetname.cells["C3"].autofitcolumns()       
+        $excel.$sheetname.cells["F3"].autofitcolumns()       
+        $excel.$sheetname.cells["G3"].autofitcolumns()
+        write-host Firewall Template okay -ForegroundColor Green       
     }
     else {
     write-host "Non-standard template used, please manually format the spreadsheet" -ForegroundColor Red
@@ -330,7 +339,7 @@ $totalrow..($ws.Dimension.Rows) | ForEach {
                     if($row -ne $ws.Dimension.Rows){$row++}               
 }
 
-echo "Processing completed and updates saved, opening the spreadsheet $xslxfullpath"
+write-host "Processing completed and updates saved, opening the spreadsheet $xslxfullpath" -ForegroundColor Green
     try {Close-ExcelPackage -ExcelPackage $excel -show}
         catch { write-host "An error occured:" -ForegroundColor red
                 write-host $_ -ForegroundColor Red
