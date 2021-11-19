@@ -234,7 +234,7 @@ foreach ($endpoint in $csv) {
     }
 
 function FormatSpreadSheet {
-echo "Check if firewall template is tampered - cell C3 is Source IP and cell E3 is Dest IP"
+echo "Check if firewall template is not tampered - cell C3 is Source IP and cell E3 is Dest IP"
     if ($excel.$sheetname.cells["C3"].value -eq 'Source IP' -And $excel.$sheetname.cells["E3"].value -eq 'Dest IP' ){
         $excel.$sheetname.InsertColumn(4,2)
         $excel.$sheetname.InsertColumn(2,2)
