@@ -1,3 +1,4 @@
+#template needs to look like one in the remedy request http://home.intranet.westpac.co.nz/aptrix/intranet00/help.nsf/650f3eec0dfb990fca25692100069854/d0cedc57382bcd84cc257fee00817ab1/$FILE/Remedy-REQ-FW_Rules%20Template%20v0.1.xlsx
 #https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
 #https://github.com/dfinke/ImportExcel
 
@@ -5,7 +6,7 @@
 $csvpath = "C:\Temp\"
 $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Temp\"
-$xlsxfile = "Remedy-REQ-FW_Rules_Kubernetes_Prod_to_prod_db2_hvt.xlsx"
+$xlsxfile = "Remedy-REQ-FW_Rules+Template+v0.1.xlsx"
 $sheetname = "Sheet1" #name of the sheet that has the firewall rules
 $firstrow = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
 $totalrow = 5 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
@@ -83,7 +84,7 @@ PARAM(
     $host.UI.WriteErrorLine($msg)
 }
 
-register-Module -Name importexcel
+Register-Module -Name importexcel
 
 function ConvertFrom-IPToInt64 () { 
 	[CmdletBinding()]
@@ -234,6 +235,7 @@ foreach ($endpoint in $csv) {
     }
 
 function FormatSpreadSheet {
+echo "Check if firewall template is tampered - cell C3 is Source IP and cell E3 is Dest IP"
     if ($excel.$sheetname.cells["C3"].value -eq 'Source IP' -And $excel.$sheetname.cells["E3"].value -eq 'Dest IP' ){
         $excel.$sheetname.InsertColumn(4,2)
         $excel.$sheetname.InsertColumn(2,2)
