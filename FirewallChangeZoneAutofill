@@ -83,7 +83,7 @@ PARAM(
     $host.UI.WriteErrorLine($msg)
 }
 
-Load-Module -Name importexcel
+register-Module -Name importexcel
 
 function ConvertFrom-IPToInt64 () { 
 	[CmdletBinding()]
