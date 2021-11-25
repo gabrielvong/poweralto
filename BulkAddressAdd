@@ -74,7 +74,7 @@ PARAM(
     $host.UI.WriteErrorLine($msg)
 }
 
-Load-Module -Name poweralto
+Register-module -Name poweralto
 
 #Envrionment Variables
 $csvpath = "C:\Temp\"
