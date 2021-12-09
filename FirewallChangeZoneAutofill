@@ -5,14 +5,14 @@
 $csvpath = "C:\Temp\"
 $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Temp\"
-$xlsxfile = "Remedy-REQ-FW_Rules+Template+v0.1.xlsx"
+$xlsxfile = "efs.xlsx"
 $sheetname = "Sheet1" #name of the sheet that has the firewall rules
 $firstrow = 5 #first row containing firewall rules, do not change as it should fit normal firewall template
-$totalrow = 5 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
+$totalrow = 20 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
 
 #Static Envrionment Variables
 $ws = $excel.$sheetname
-$vr = $null
+$vsys = $null
 $securityzone = $null
 $row = $firstrow
 $errorlogpath = "C:\Temp\"
@@ -23,7 +23,7 @@ $csvfullpath = join-path -path $csvpath -ChildPath $csvfile
 $xslxfullpath = join-path -path $xlsxpath -ChildPath $xlsxfile
 $errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
 
-function Register-Module {
+Function Register-Module {
 [CmdletBinding()]
 PARAM(
     [parameter(Mandatory=$true, Position=1)]
@@ -54,7 +54,7 @@ PARAM(
     }
 }
 
-function Write-ErrorMessage {
+Function Write-ErrorMessage {
 [CmdletBinding()]
 PARAM(
     [parameter(Mandatory=$false)]
@@ -85,7 +85,7 @@ PARAM(
 
 Register-Module -Name importexcel
 
-function ConvertFrom-IPToInt64 () { 
+Function ConvertFrom-IPToInt64 () { 
 	[CmdletBinding()]
 	param (
 		[Parameter(Mandatory=$True)]
@@ -99,7 +99,7 @@ function ConvertFrom-IPToInt64 () {
 	}
 } 
  
-function ConvertFrom-Int64ToIP() { 
+Function ConvertFrom-Int64ToIP() { 
   [CmdletBinding()]
 	param (
 		[Parameter(Mandatory=$True)]
@@ -145,7 +145,7 @@ Function Get-IPsInRange {
 			#Write-Host "Cidr is $cidr"
 			$temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
 			$IPAddress = $matches[0]
-			#Write-Host "IP is $IPAddress" #"IP2 is $IPAddress2"
+			#Write-Host "IP is $IPAddress"
 		}
 		elseif ($IPAddress -match $RangeRegex) {
 			$startaddr = ConvertFrom-IPToInt64 -ip $matches[1]
@@ -196,7 +196,7 @@ Function Get-IPsInRange {
 	}
 }
 
-function Get-zonefromIP {
+Function Get-zonefromIP {
     param  (
         $inputIP
         )
@@ -217,13 +217,13 @@ foreach ($endpoint in $csv) {
                     echo "$inputIP is a member of $IPsubnet"
                     #echo "Resides in:"
                     $script:securityzone = $endpoint.'Security Zone' 
-                    $script:vr = $endpoint.'Virtual System'
+                    $script:vsys = $endpoint.'Virtual System'
                     return 
                 }
             else {
                     
                     $script:securityzone = "Manual check required"
-                    $script:vr = "Manual check required"                
+                    $script:vsys = "Manual check required"                
             }
         }
         catch
@@ -233,7 +233,7 @@ foreach ($endpoint in $csv) {
     }
     }
 
-function FormatSpreadSheet {
+Function FormatSpreadSheet {
 echo "Check if firewall template is not tampered - cell C3 is Source IP and cell E3 is Dest IP"
     if ($excel.$sheetname.cells["C3"].value -eq 'Source IP' -And $excel.$sheetname.cells["E3"].value -eq 'Dest IP' ){
         $excel.$sheetname.InsertColumn(4,2)
@@ -278,7 +278,7 @@ echo "Check if firewall template is not tampered - cell C3 is Source IP and cell
     }
 }
 
-function IPformat {
+Function IPformat {
     param  (
 		$IPAddress
            )
@@ -301,9 +301,10 @@ FormatSpreadSheet
 
 echo "Processing spreadsheet $xslxfullpath"
 
-echo 'Processing Source IPs to Zone Mapping'
+echo 'Processing IPs to Zone Mapping'
 $totalrow..($ws.Dimension.Rows) | ForEach {
                   write-host "row = $row"
+                  #source IP to zone mapping
                   $IPAddress = $excel.$sheetname.cells["E$row"].value
                   echo $IPAddress
                   if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
@@ -313,33 +314,28 @@ $totalrow..($ws.Dimension.Rows) | ForEach {
                   
                     if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
                         Get-zonefromIP -inputIP $IPAddress
-                        #$ws.cells["C$row"].value = [string]$v
-                        #echo vr is $vr
+                        #echo vsys is $vsys
                         #echo securityzone is $securityzone
-                        $excel.$sheetname.cells["B$row"].value = $vr
+                        $excel.$sheetname.cells["B$row"].value = $vsys
                         $excel.$sheetname.cells["C$row"].value = $securityzone
+                    }
+                  #destination IP to zone mapping
+                  $IPAddress = $excel.$sheetname.cells["I$row"].value
+                  echo $IPAddress
+                  if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
+                        $temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
+			            $IPAddress = $matches[0]
+                        }
+                  
+                    if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                        Get-zonefromIP -inputIP $IPAddress
+                        #echo vsys is $vsys
+                        #echo securityzone is $securityzone
+                        $excel.$sheetname.cells["F$row"].value = $vsys
+                        $excel.$sheetname.cells["G$row"].value = $securityzone
                     }
                     if($row -ne $ws.Dimension.Rows){$row++}
                   
-}
-
-
-$row=$firstrow
-echo 'Processing Destination IPs to Zone Mapping'
-$totalrow..($ws.Dimension.Rows) | ForEach {
-                  write-host "row = $row"
-                  $IPAddress = $excel.$sheetname.cells["I$row"].value
-                  echo $IPAddress
-                  IPformat ($IPAddress)
-                  if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
-                        Get-zonefromIP -inputIP $IPAddress
-                        #$ws.cells["C$row"].value = [string]$v
-                        #echo vr is $vr
-                        #echo securityzone is $securityzone
-                        $excel.$sheetname.cells["F$row"].value = $vr
-                        $excel.$sheetname.cells["G$row"].value = $securityzone
-                    }
-                    if($row -ne $ws.Dimension.Rows){$row++}               
 }
 
 write-host "Processing completed and updates saved, opening the spreadsheet $xslxfullpath" -ForegroundColor Green
