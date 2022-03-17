@@ -5,7 +5,7 @@
 $csvpath = "C:\Users\" + $env:UserName + "\Downloads"
 $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Users\" + $env:UserName + "\Downloads"
-$xlsxfile = "CiSNS-BAU+Firewall+Rule+AWS+Prod+Palo+to+OnpremMgmt.xlsx"
+$xlsxfile = "Firewall Rules.xlsx"
 $sheetname = "Firewall Rules" #name of the sheet that has the firewall rules
 $firstrow = 4 #first row containing firewall rules, do not change as it should fit normal firewall template
 $totalrow = 15 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
