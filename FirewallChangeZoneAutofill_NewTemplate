@@ -1,0 +1,316 @@
+#https://www.reddit.com/r/PowerShell/comments/8u14wl/check_a_list_of_ips_against_a_list_of_subnets/
+#https://github.com/dfinke/ImportExcel
+
+#Configurable Envrionment Variables
+$csvpath = "C:\Temp\"
+$csvfile = "export_network_interfaces.csv"
+$xlsxpath = "C:\Temp\"
+$xlsxfile = "excel.xlsx"
+$sheetname = "Firewall Rules" #name of the sheet that has the firewall rules
+$firstrow = 4 #first row containing firewall rules, do not change as it should fit normal firewall template
+$totalrow = 15 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
+
+#Static Envrionment Variables
+$ws = $excel.$sheetname
+$vsys = $null
+$securityzone = $null
+$row = $firstrow
+$errorlogpath = "C:\Temp\"
+$errorlogfile = "NetworkInterfaceErrorLogs.txt"
+
+#Full path of input files/Error logs
+$csvfullpath = join-path -path $csvpath -ChildPath $csvfile
+$xslxfullpath = join-path -path $xlsxpath -ChildPath $xlsxfile
+$errorlog = join-path -path $errorlogpath -ChildPath $errorlogfile
+
+Function Register-Module {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$true, Position=1)]
+    [string]$Name,
+    [parameter(Mandatory=$false, Position=2)]
+    [string]$Version,
+    [parameter(Mandatory=$false, Position=3)]
+    [string]$Repository,
+    [Switch]$AllowClobber
+)
+
+    $versionParam = @{ }
+
+    if ($Version) {
+        $versionParam.Add('RequiredVersion', $Version);
+    }
+
+    if ($Repository) {
+        $versionParam.Add('Repository', $Repository);
+    }
+        
+    if (-not (Get-Module -Name $Name -ListAvailable | where { [String]::IsNullOrEmpty($Version) -or $_.Version -eq $Version } )) {
+        Write-Host "Install module $Name $Version"
+        Install-Module -Name $Name -Force -Verbose -Scope AllUsers @versionParam -AllowClobber:$AllowClobber -ErrorAction Stop
+    } else {
+        Write-Host "Import module $Name $Version"
+        Import-Module $Name @versionParam -ErrorAction Stop
+    }
+}
+
+Function Write-ErrorMessage {
+[CmdletBinding()]
+PARAM(
+    [parameter(Mandatory=$false)]
+    $Prefix = "Error",
+    [parameter(Mandatory=$true, Position=1)]
+    $Error
+)
+
+    $err = $_.Exception
+    $indent = "" 
+    $msg = ""
+
+    while ($err) {
+        if ($msg.Length -gt 0) {
+            $msg += "`r`n${indent} => " 
+        } else {
+            $msg = "${Prefix} : "
+        }
+
+        $msg += $err.Message
+        $indent += "  "
+        $err = $err.InnerException
+    }
+
+ 
+    $host.UI.WriteErrorLine($msg)
+}
+
+Register-Module -Name importexcel
+
+Function ConvertFrom-IPToInt64 () { 
+	[CmdletBinding()]
+	param (
+		[Parameter(Mandatory=$True)]
+		[string]
+		$ip
+	) 
+	
+	PROCESS {
+		$octets = $ip.split(".") 
+		[int64]([int64]$octets[0]*16777216 +[int64]$octets[1]*65536 +[int64]$octets[2]*256 +[int64]$octets[3])
+	}
+} 
+ 
+Function ConvertFrom-Int64ToIP() { 
+  [CmdletBinding()]
+	param (
+		[Parameter(Mandatory=$True)]
+		[int64]
+		$int
+	) 
+	PROCESS {
+		(([math]::truncate($int/16777216)).tostring()+"."+([math]::truncate(($int%16777216)/65536)).tostring()+"."+([math]::truncate(($int%65536)/256)).tostring()+"."+([math]::truncate($int%256)).tostring() )
+		# ([ipaddress]$int).IPAddressToString
+	}
+}
+
+Function Get-IPsInRange {
+	[CmdletBinding(DefaultParameterSetName="IPAddress")]
+	PARAM (
+		[Parameter(ParameterSetName="IPAddress",Mandatory=$True)]
+		[string]
+		$IPAddress,
+		
+		[Parameter(ParameterSetName="IPAddress",Mandatory=$False)]
+		[string]
+		$Mask,
+		
+		[Parameter(ParameterSetName="StartEnd",Mandatory=$True)]
+		[string]
+		$Start,
+		
+		[Parameter(ParameterSetName="StartEnd",Mandatory=$True)]
+		[string]
+		$End
+	)
+	
+	BEGIN {
+		# Pure IPv4 Address
+		$IPv4Regex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+		$RangeRegex = "({0})-({1})" -f $IPv4Regex.Replace('$',''), $IPv4Regex.Replace('^','')
+		if ($IPAddress -match $IPv4Regex) {
+			# IP is Fine as is
+		}
+		elseif ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
+			# IP Address with CIDR block
+			$cidr = $matches[5]
+			#Write-Host "Cidr is $cidr"
+			$temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
+			$IPAddress = $matches[0]
+			#Write-Host "IP is $IPAddress"
+		}
+		elseif ($IPAddress -match $RangeRegex) {
+			$startaddr = ConvertFrom-IPToInt64 -ip $matches[1]
+			$endaddr = ConvertFrom-IPToInt64 -ip $matches[5]
+		}
+	}
+	
+	PROCESS {
+		if ( [string]::IsNullOrEmpty($startaddr) -or [string]::IsNullOrEmpty($endaddr) ) {
+			if ($PSBoundParameters.ContainsKey("IPAddress")) {
+				$ipaddr = [Net.IPAddress]::Parse($IPAddress)
+			} 
+			
+			if ($PSBoundParameters.ContainsKey("mask")) {
+				$maskaddr = [Net.IPAddress]::Parse($mask)
+			} 
+			elseif (-Not([string]::IsNullOrEmpty($CIDR))) {
+				$maskaddr = [Net.IPAddress]::Parse((ConvertFrom-Int64ToIP -int ([convert]::ToInt64(("1"*$cidr+"0"*(32-$cidr)),2))))
+			}
+			else {
+				$mask = "255.255.255.255"
+				$maskaddr = [Net.IPAddress]::Parse($mask)
+			}
+			
+			if ($PSBoundParameters.ContainsKey("IPAddress")) {
+				$networkaddr = new-object net.ipaddress ($maskaddr.address -band $ipaddr.address)
+			} 
+			
+			if ($PSBoundParameters.ContainsKey("IPAddress")) {
+				$broadcastaddr = new-object net.ipaddress (([system.net.ipaddress]::parse("255.255.255.255").address -bxor $maskaddr.address -bor $networkaddr.address))
+			} 
+			 
+			if ($PSBoundParameters.ContainsKey("IPAddress")) { 
+				$startaddr = ConvertFrom-IPToInt64 -ip $networkaddr.ipaddresstostring 
+				$endaddr = ConvertFrom-IPToInt64 -ip $broadcastaddr.ipaddresstostring 
+			} else { 
+				$startaddr = ConvertFrom-IPToInt64 -ip $start 
+				$endaddr = ConvertFrom-IPToInt64 -ip $end 
+			}
+		}
+		else {
+			
+		}
+		 
+		for ($i = $startaddr; $i -le $endaddr; $i++) { 
+			ConvertFrom-Int64ToIP -int $i 
+		}
+	}
+}
+
+Function Get-zonefromIP {
+    param  (
+        $inputIP
+        )
+    
+foreach ($endpoint in $csv) {
+    $IPsubnets = ($endpoint.'IP Address') 
+    Foreach ($IPsubnet in $IPsubnets) {
+    #echo $IPsubnet
+    #echo ++
+    if (-not $IPsubnet -ne "none")
+        {
+        try
+        {
+            $subnetaddresses=Get-IPsInRange -IPAddress $IPsubnets
+            #echo $subnetaddresses
+            if ($subnetaddresses -contains $inputIP) 
+                {
+                    echo "$inputIP is a member of $IPsubnet"
+                    #echo "Resides in:"
+                    $script:securityzone = $endpoint.'Security Zone' 
+                    $script:vsys = $endpoint.'Virtual System'
+                    return 
+                }
+            else {
+                    
+                    $script:securityzone = "Manual check required"
+                    $script:vsys = "Manual check required"                
+            }
+        }
+        catch
+        {}
+        }
+        }
+    }
+    }
+
+Function FormatSpreadSheet {
+echo "Check if firewall template is not tampered - cell E2 is Source IP and cell I2 is Dest IP"
+    if ($excel.$sheetname.cells["E2"].value -eq 'Source Host Name or Group' -And $excel.$sheetname.cells["I2"].value -eq 'Destination Host Name or Group' ){
+    $excel.$sheetname.column(3).hidden=$false
+    $excel.$sheetname.column(4).hidden=$false
+    $excel.$sheetname.column(7).hidden=$false
+    $excel.$sheetname.column(8).hidden=$false
+    }
+    else {
+    write-host "Non-standard template used, please manually format the spreadsheet to mimic the standard template" -ForegroundColor Red
+    break
+    }
+}
+
+Function IPformat {
+    param  (
+		$IPAddress
+           )
+                    if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
+                        $temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
+			            $script:IPAddress = $matches[0]
+                        }
+
+    }    
+
+
+#Import CSV
+$csv = Get-Content $csvfullpath  | ConvertFrom-CSV
+
+#Open spreadsheet and start processing source/destination IPs
+$excel = Open-ExcelPackage -path "$xlsxpath\$xlsxfile"
+
+echo "Formatting spreadsheet $xslxfullpath"
+FormatSpreadSheet 
+
+echo "Processing spreadsheet $xslxfullpath"
+
+echo 'Processing IPs to Zone Mapping'
+$totalrow..($ws.Dimension.Rows) | ForEach {
+                  write-host "row = $row"
+                  #source IP to zone mapping
+                  $IPAddress = $excel.$sheetname.cells["F$row"].value
+                  echo $IPAddress
+                  if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
+                        $temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
+			            $IPAddress = $matches[0]
+                        }
+                  
+                    if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                        Get-zonefromIP -inputIP $IPAddress
+                        #echo vsys is $vsys
+                        #echo securityzone is $securityzone
+                        $excel.$sheetname.cells["C$row"].value = $vsys
+                        $excel.$sheetname.cells["D$row"].value = $securityzone
+                    }
+                  #destination IP to zone mapping
+                  $IPAddress = $excel.$sheetname.cells["I$row"].value
+                  echo $IPAddress
+                  if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
+                        $temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
+			            $IPAddress = $matches[0]
+                        }
+                  
+                    if (-not(([string]::IsNullOrEmpty($IPAddress)))) {
+                        Get-zonefromIP -inputIP $IPAddress
+                        #echo vsys is $vsys
+                        #echo securityzone is $securityzone
+                        $excel.$sheetname.cells["G$row"].value = $vsys
+                        $excel.$sheetname.cells["H$row"].value = $securityzone
+                    }
+                    if($row -ne $ws.Dimension.Rows){$row++}
+                  
+}
+
+write-host "Processing completed and updates saved, opening the spreadsheet $xslxfullpath" -ForegroundColor Green
+    try {Close-ExcelPackage -ExcelPackage $excel -show}
+        catch { write-host "An error occured:" -ForegroundColor red
+                write-host $_ -ForegroundColor Red
+                write-host "If you get 'Error saving file' error, please close $xslxfullpath and re-run the script"
+
+           }
