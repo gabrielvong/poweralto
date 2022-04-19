@@ -5,7 +5,7 @@
 $csvpath = "C:\Users\" + $env:UserName + "\Downloads"
 $csvfile = "export_network_interfaces.csv"
 $xlsxpath = "C:\Users\" + $env:UserName + "\Downloads"
-$xlsxfile = "Firewall Rules.xlsx"
+$xlsxfile = "CiSNS-BAU Firewall Rule Template-v0.4.xlsx"
 $sheetname = "Firewall Rules" #name of the sheet that has the firewall rules
 $firstrow = 4 #first row containing firewall rules, do not change as it should fit normal firewall template
 $totalrow = 15 #total number of rows' worth of firewall rules, modify the value depending on the number of rules defined
@@ -234,8 +234,15 @@ foreach ($endpoint in $csv) {
     }
 
 Function FormatSpreadSheet {
-echo "Check if firewall template is not tampered - cell E2 is Source IP and cell I2 is Dest IP"
-    if ($excel.$sheetname.cells["E2"].value -eq 'Source Host Name or Group' -And $excel.$sheetname.cells["I2"].value -eq 'Destination Host Name or Group' ){
+echo "Check if firewall template is not tampered - cell E2 is Source Host Name and cell I2 is Destination Host Name"
+    if ($excel.$sheetname.cells["E2"].value -eq 'Source Host Name/Group' -And $excel.$sheetname.cells["I2"].value -eq  'Destination Host Name/Group' ){
+    $excel.$sheetname.column(3).hidden=$false
+    $excel.$sheetname.column(4).hidden=$false
+    $excel.$sheetname.column(7).hidden=$false
+    $excel.$sheetname.column(8).hidden=$false
+    }
+    elseif 
+    ($excel.$sheetname.cells["E2"].value -eq 'Source Host Name or Group' -And $excel.$sheetname.cells["I2"].value -eq  'Destination Host Name or Group' ){
     $excel.$sheetname.column(3).hidden=$false
     $excel.$sheetname.column(4).hidden=$false
     $excel.$sheetname.column(7).hidden=$false
@@ -289,7 +296,7 @@ $totalrow..($ws.Dimension.Rows) | ForEach {
                         $excel.$sheetname.cells["D$row"].value = $securityzone
                     }
                   #destination IP to zone mapping
-                  $IPAddress = $excel.$sheetname.cells["I$row"].value
+                  $IPAddress = $excel.$sheetname.cells["J$row"].value
                   echo $IPAddress
                   if ($IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$") {
                         $temp = $IPAddress -match "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]{1,3})"
