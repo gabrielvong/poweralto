@@ -1,7 +1,8 @@
 <B>HIGH LEVEL HOW TO</B>
+<B>IT IS STRONGLY RECOMMENDED FOR YOU TO TRY OUT THE SCRIPT ON LAB ENVRIONMENT, KNOWING HOW IT BEHAVES BEFORE RUNNING ON PRODUCTION EVRIONMENT.</B>
+
 
 <B>On Panorama</B>
-
 1. Using your own Panorama username/password, generate an API key, keep it in a your password safe. This API key is hashed out of your password so it will remain valid until your Panorama account's password changes:
   https://panorama/api/?type=keygen&user=mxxxx&password=xxxx
 
