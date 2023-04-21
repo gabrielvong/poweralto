@@ -19,4 +19,5 @@
 6. Go to Panorama GUI to preview the changes made by the script before commit (you need to login to panorama GUI with the account you used at step 1, otherwise it will cuase commit/auditing error)
 7. Commit the change
 8. Push the change to device(s) 
+<B></B>
 
