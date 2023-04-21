@@ -1,7 +1,7 @@
 <B>HIGH LEVEL HOW TO</B>
 
 
-<B>IT IS STRONGLY RECOMMENDED FOR YOU TO TRY OUT THE SCRIPT ON LAB ENVRIONMENT, UNDERSTANDING HOW IT BEHAVES BEFORE RUNNING IT ON PRODUCTION EVRIONMENT.</B>
+<B>IT IS STRONGLY RECOMMENDED TO TRY OUT THE SCRIPT ON LAB ENVRIONMENT, UNDERSTANDING HOW IT BEHAVES BEFORE RUNNING IT ON PRODUCTION EVRIONMENT.</B>
 
 
 <B>On Panorama</B>
@@ -19,4 +19,5 @@
 6. Go to Panorama GUI to preview the changes made by the script before commit (you need to login to panorama GUI with the account you used at step 1, otherwise it will cuase commit/auditing error)
 7. Commit the change
 8. Push the change to device(s) 
+<B></B>
 
